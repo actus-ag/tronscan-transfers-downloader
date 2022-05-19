@@ -51,94 +51,55 @@ async function get_trc10_details(id) {
 let trc20_details;
 
 async function download_trc20_details() {
-    while (true) {
-        trc20_details = {};
-        let downloaded = 0;
-        let options = {
-            uri: 'https://apilist.tronscan.org/api/token_trc20',
-            qs: {
-                limit: 20,
-                start: 0
-            },
-            headers: {
-                'User-Agent': 'Request-Promise-Native'
-            },
-            json: true
-        };
-        let reply = await rpn(options);
-        let total = reply.rangeTotal;
-        while (true) {
-            while (reply.total != total && reply.rangeTotal == total) {
-                console.log('Error in query total (got ' + reply.total + ', expected ' + total + '), trying again...');
-                reply = await rpn(options);
-            }
-            if (reply.rangeTotal != total) {
-                break;
-            }
-            for (let i = 0; i < reply.trc20_tokens.length; ++i) {
-                trc20_details[reply.trc20_tokens[i].name] = reply.trc20_tokens[i];
-            }
-            downloaded += reply.trc20_tokens.length;
-            console.log('Downloaded ' + downloaded + '/' + total);
-            options.qs.start += options.qs.limit;
-            if (reply.trc20_tokens.length < options.qs.limit) {
-                break;
-            }
-            reply = await rpn(options);
+    trc20_details = {};
+    let downloaded = 0;
+    let options = {
+        uri: 'https://apilist.tronscan.org/api/token_trc20',
+        qs: {
+            limit: 20,
+            start: 0
+        },
+        headers: {
+            'User-Agent': 'Request-Promise-Native'
+        },
+        json: true
+    };
+    let reply = await rpn(options);
+    let total = reply.rangeTotal;
+    while (downloaded < total) {
+        for (let i = 0; i < reply.trc20_tokens.length; ++i) {
+            trc20_details[reply.trc20_tokens[i].name] = reply.trc20_tokens[i];
         }
-        if (reply.rangeTotal != total) {
-            console.log('Total number of TRC20s has changed, starting again');
-        } else if (downloaded != total) {
-            console.log("Total number of TRC20s downloaded doesn't match total, starting again");
-        } else {
-            break;
-        }
+        downloaded += reply.trc20_tokens.length;
+        console.log('Downloaded ' + downloaded + '/' + total);
+        options.qs.start += reply.trc20_tokens.length;
+        reply = await rpn(options);
     }
 }
 
 async function download_transfers(uri, transfer_processor) {
-    let transfers;
-    while (true) {
-        transfers = [];
-        let options = {
-            uri,
-            qs: {
-                address,
-                limit: 20,
-                start: 0
-            },
-            headers: {
-                'User-Agent': 'Request-Promise-Native'
-            },
-            json: true
-        };
-        let reply = await rpn(options);
-        let total = reply.rangeTotal;
-        while (true) {
-            while (reply.total != total && reply.rangeTotal == total) {
-                console.log('Error in query total (got ' + reply.total + ', expected ' + total + '), trying again...');
-                reply = await rpn(options);
-            }
-            if (reply.rangeTotal != total) {
-                break;
-            }
-            for (let i = 0; i < reply.data.length; ++i) {
-                transfers.push(await transfer_processor(reply.data[i]));
-            }
-            console.log('Downloaded ' + transfers.length + '/' + total);
-            options.qs.start += options.qs.limit;
-            if (reply.data.length < options.qs.limit) {
-                break;
-            }
-            reply = await rpn(options);
+    let transfers = [];
+    let options = {
+        uri,
+        qs: {
+            address,
+            limit: 20,
+            start: 0
+        },
+        headers: {
+            'User-Agent': 'Request-Promise-Native'
+        },
+        json: true
+    };
+    let reply = await rpn(options);
+    let total = reply.rangeTotal;
+    while (transfers.length < total) {
+        for (let i = 0; i < reply.data.length; ++i) {
+            transfers.push(await transfer_processor(reply.data[i]));
         }
-        if (reply.rangeTotal != total) {
-            console.log('Total number of transfers has changed, starting again');
-        } else if (transfers.length != total) {
-            console.log("Total number of transfers downloaded doesn't match total, starting again");
-        } else {
-            break;
-        }
+        console.log('Downloaded ' + transfers.length + '/' + total);
+        options.qs.start += reply.data.length;
+        reply = await rpn(options);
     }
     return transfers;
 }
