@@ -10,8 +10,11 @@
   "author": "Jason Raymond Bell <jason@epixxware.com>",
   "license": "Unlicense",
   "dependencies": {
+    "csv-parser": "^3.0.0",
     "csv-stringify": "^5.3.3",
+    "ramda": "^0.28.0",
     "request": "^2.88.0",
-    "request-promise-native": "^1.0.7"
+    "request-promise-native": "^1.0.7",
+    "server-store": "^1.0.2"
   }
 }
